@@ -65,6 +65,7 @@ description: >-
 - **`references/stage-and-project.md`** — 涉及应用模型(UIAbility 生命周期、Want、Context)、`module.json5`/`app.json5`、ohpm 依赖、hvigor 构建、签名打包时。
 - **`references/third-party-packages.md`** — 需要在 ohpm 包中心查找、筛选、安装、升级第三方包时。覆盖 `https://ohpm.openharmony.cn/#/cn/home` 的查包流程、命令行校验、依赖落点与风险审查。
 - **`references/mpchart.md`** — 使用 `@ohos/mpchart` 构建折线图、柱状图等图表时。包含安装、LineChart 基础范式、轴/图例/手势/数据刷新、深色模式适配与常见坑。
+- **`references/aliyun-oss-upload.md`** — 实现文件直传到阿里云 OSS。基于官方 `@aliyun/oss` SDK + STS 临时授权的完整方案，包含封装工具类、后端接口规范、安全要求与最佳实践。
 - **`references/common-kits.md`** — 需要网络、数据持久化(首选项/关系型/KV)、通知、账号登录、推送、定位、地图、支付等能力时——先来这里选对 Kit,再查官方文档。
 - **`references/official-docs-index.md`** — **每次要查具体 API 都先来这**:华为文档中心按"应用框架/系统/媒体/图形/应用服务/AI/工具/AGC"分类的 URL 索引。
 - **`references/quality-and-release.md`** — 权限模型、性能/功耗/稳定性体验、安全隐私合规、应用上架(AppGallery Connect)。
