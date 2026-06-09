@@ -1,0 +1,23 @@
+{
+  "skill_name": "harmonyos-app-dev",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我在用 DevEco 写一个鸿蒙 app,想加一个「设置」页:一个开关控制夜间提醒、一个保存按钮,点保存后弹个 toast 提示「已保存」。再让首页能点进这个设置页。用 ArkTS 帮我写出来。",
+      "expected_output": "给出符合 ArkUI 声明式范式的页面:@Entry/@Component struct + build();用 @State 管理开关状态;Toggle/Button 等组件;用 promptAction.showToast 弹提示;用 Navigation(NavPathStack/NavDestination)或 router 实现首页跳转。代码是 ArkTS(.ets),不出现 any、无类型对象字面量等违规写法。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "慢病伴要对接家用蓝牙血压计,老人测完血压后自动把收缩压、舒张压同步进 app。鸿蒙这边该用什么能力实现?给我一个接入方案,以及需要查哪些官方文档。",
+      "expected_output": "正确选型到 Connectivity Kit 的低功耗蓝牙(BLE)能力做设备扫描/连接/读取特征值;指出需在 module.json5 声明蓝牙相关权限并运行时申请;给出分步接入思路(扫描→连接→订阅 GATT 特征→解析血压数据→入库);强调具体 BLE API 以官方文档为准,并指向 official-docs-index 里的 Connectivity Kit 文档 URL,用浏览器工具读取。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "这段代码在鸿蒙里编译报错,帮我看看为什么、并改成符合规范的写法:\n\nfunction parse(data: any) {\n  let result = {};\n  result.name = data.name;\n  result['age'] = data.age;\n  return result as UserInfo;\n}",
+      "expected_output": "准确指出多处违反 ArkTS 约束:禁用 any;禁止无类型对象字面量并运行时动态加属性(result.name=);受限的 as 断言。给出修正:为参数与返回定义 interface/class,构造时一次性按类型赋值,避免动态属性与 any。解释 ArkTS 是 TS 收紧子集、为何这样要求。",
+      "files": []
+    }
+  ]
+}
