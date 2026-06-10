@@ -58,6 +58,7 @@ struct Index {
 - 列表:`List` + `ListItem`;**长列表用 `LazyForEach`**(配 `IDataSource`,按需创建节点);网格 `Grid` / `GridRow`。
 - 滚动 `Scroll`;轮播 `Swiper`;分页 `Tabs` + `TabContent`。
 - 渲染控制:`if / else if / else`、`ForEach`(小数据集)、`LazyForEach`(大数据集)。
+- **ForEach 键值生成函数决定是否重渲染**:键值相同的项被视为"数据未变化",直接复用旧 UI——即使数据源换成了内容不同的新对象。因此键值只用 `id` 时,编辑/刷新后该行不会更新。小列表用 `(item) => JSON.stringify(item)`(内容变 → key 变 → 重建该行);长列表或高频局部更新用 `@Observed` class + `@ObjectLink` 子组件做属性级观察。
 
 ## 导航
 
@@ -68,6 +69,9 @@ struct Index {
   - **跳转/回退**:`pathStack.pushPath({ name })` 或 `pushPathByName(name, param)`(param 可传 `null`);`pathStack.pop()` 回退。子页用 `.onReady((ctx) => this.pathStack = ctx.pathStack)` 或 `@Consume` 拿到栈。
 - 旧 `@kit.ArkUI` 的 `router`(`router.pushUrl`)仍可用,但新应用优先 `Navigation`。
 - 弹窗/浮层:`CustomDialog`、`bindSheet`(半模态)、`bindContentCover`(全屏)、`promptAction.showToast` / `showDialog`。
+  - **一个节点只能绑一个 `bindSheet`**:同一节点链式绑定多个会相互顶替(点 B 弹出 A、原弹窗失效)。多弹窗用「单 bindSheet + `@State activeSheet` 切换 builder 内容」。
+  - `height: SheetSize.FIT_CONTENT`(API 11+)随内容自适应,要求 builder **根节点高度不能用百分比**;内部滚动区改用 `constraintSize({ maxHeight })` 限高。
+  - sheet 内自定义组件与宿主通信:`@Link` 双向 + 父组件 `@State @Watch` 监听事件字符串可用;每次打开用自增 `sessionId`(`@Prop @Watch`)触发表单重置,因为 builder 内组件只创建一次不会重走 `aboutToAppear`。
 
 ## 生命周期
 

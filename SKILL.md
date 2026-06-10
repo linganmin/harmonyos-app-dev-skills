@@ -76,6 +76,9 @@ description: >-
 
 - **把 ArkTS 当 TS 写**:用 `any`、对象字面量当类型、给对象动态加属性、用 `as` 乱转——在 HarmonyOS NEXT 上会直接报错。先读 `arkts-language.md`。
 - **状态不刷新**:UI 不更新,几乎总是状态装饰器用错(改了普通成员变量、或改的是 `@State` 对象的深层属性而没用 `@Observed/@ObjectLink`)。见 `arkui-declarative.md`。
+- **ForEach 键值只用 id,编辑后列表行不刷新**:键值生成函数返回相同 key 时该项被视为"数据未变化"直接复用旧 UI。重新拉取数据后对象内容变了但 id 没变 → 该行停留旧内容。小列表直接 `(item) => JSON.stringify(item)`;长列表/高频局部更新用 `@Observed` class + `@ObjectLink` 子组件。
+- **同一节点链式绑定多个 `bindSheet` 会冲突**:点 B 入口弹出 A 的 sheet、两个 SheetPage 相互顶替,原弹窗再也弹不出。一个宿主组件最多绑一个 `bindSheet`,多弹窗用「单 bindSheet + `@State activeSheet` 切换 builder 内容」。另:`SheetSize.FIT_CONTENT` 自适应高度要求 builder 根节点高度**不能用百分比**。
+- **私有读 OSS 桶上传后回显 403**:客户端直传成功后自行拼接的裸 URL 无读取权限,`Image` 加载 403 但画面停留旧图,上传 toast/状态全正常,肉眼极难定位(需抓 hilog 看 DownloadManager 403)。预览一律用本地沙箱文件(`file://` + 缓存路径),裸 URL/objectKey 只用于提交后端。见 `aliyun-oss-upload.md`。
 - **UI 加载位置**:在 `UIAbility.onCreate` 里加载页面是错的;页面要在 `onWindowStageCreate(windowStage)` 里通过 `windowStage.loadContent(...)` 加载。
 - **沉浸式只铺满、不避让**:调用 `setWindowLayoutFullScreen(true)` 后,必须同时读取 `getWindowAvoidArea(TYPE_SYSTEM/TYPE_NAVIGATION_INDICATOR)` 并监听 `on('avoidAreaChange')`,把顶部/底部避让高度写入状态,页面背景用 `expandSafeArea`,但实际内容、顶部栏、底部导航/按钮要用避让高度做 padding。详见 `references/immersive-system-bars.md`。
 - **权限两步缺一**:`module.json5` 声明了权限 ≠ 拿到权限;`user_grant` 级权限还需运行时向用户申请。
