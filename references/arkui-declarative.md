@@ -56,7 +56,8 @@ struct Index {
 
 - 线性:`Column` / `Row`(配 `justifyContent` / `alignItems`);层叠:`Stack`;弹性:`Flex`;相对:`RelativeContainer`。
 - 列表:`List` + `ListItem`;**长列表用 `LazyForEach`**(配 `IDataSource`,按需创建节点);网格 `Grid` / `GridRow`。
-- 滚动 `Scroll`;轮播 `Swiper`;分页 `Tabs` + `TabContent`。
+- 滚动 `Scroll`;轮播 `Swiper`;分页 `Tabs` + `TabContent`。**`Scroll` 内容不足一屏时默认垂直居中**(`align` 默认 Center),要从顶部渲染的页面必须显式 `.align(Alignment.Top)`。
+- 下拉刷新 `Refresh({ refreshing: $$this.x }) { Scroll(...) }.onRefreshing(cb)`:刷新动画**不会自动收起**,请求完成后所有分支(成功/失败/早退)都要手动 `this.x = false`。
 - 渲染控制:`if / else if / else`、`ForEach`(小数据集)、`LazyForEach`(大数据集)。
 - **ForEach 键值生成函数决定是否重渲染**:键值相同的项被视为"数据未变化",直接复用旧 UI——即使数据源换成了内容不同的新对象。因此键值只用 `id` 时,编辑/刷新后该行不会更新。小列表用 `(item) => JSON.stringify(item)`(内容变 → key 变 → 重建该行);长列表或高频局部更新用 `@Observed` class + `@ObjectLink` 子组件做属性级观察。
 
@@ -68,6 +69,11 @@ struct Index {
   - **子页注册有两种**:① `.navDestination(this.PageMap)`,`PageMap` 是 `@Builder(name: string)`,`if/else` 分发到各 `NavDestination` 组件——**免配置、适合骨架/小规模**;② 系统路由表 `router_map.json`(`module.json5` 配 `routerMap`)+ `pushPathByName('name', param)`——**更解耦、适合规模化与跨模块**。
   - **跳转/回退**:`pathStack.pushPath({ name })` 或 `pushPathByName(name, param)`(param 可传 `null`);`pathStack.pop()` 回退。子页用 `.onReady((ctx) => this.pathStack = ctx.pathStack)` 或 `@Consume` 拿到栈。
 - 旧 `@kit.ArkUI` 的 `router`(`router.pushUrl`)仍可用,但新应用优先 `Navigation`。
+- **router → Navigation 渐进迁移模式**(存量 router 工程加新页面时验证过):
+  - 主框架 `@Entry` 页内用 `Navigation(stack)` 包住底部 `Tabs`,新页面全部做成 `NavDestination` 走 `PageMap`;存量 `@Entry` 页(登录/引导等应用级流程)暂留 router,两套并存互不干扰。
+  - `NavPathStack` 放进**单例 service**(如 `NavService.getInstance().stack`),任意深度的子组件直接 `push(name, param)` / `pop()`,不用逐层透传也不依赖 `@Consume`。
+  - NavDestination 取参用 `.onReady((ctx: NavDestinationContext) => ctx.pathInfo.param)`——`PageMap` 的 `@Builder (name: string)` 拿不到参数。
+  - **全局悬浮件(迷你播放器等)必须放在 Navigation 外层的 Stack 上**:放在 Navigation 首页内容里,push 子页后会被 NavDestination 盖住。
 - 弹窗/浮层:`CustomDialog`、`bindSheet`(半模态)、`bindContentCover`(全屏)、`promptAction.showToast` / `showDialog`。
   - **一个节点只能绑一个 `bindSheet`**:同一节点链式绑定多个会相互顶替(点 B 弹出 A、原弹窗失效)。多弹窗用「单 bindSheet + `@State activeSheet` 切换 builder 内容」。
   - `height: SheetSize.FIT_CONTENT`(API 11+)随内容自适应,要求 builder **根节点高度不能用百分比**;内部滚动区改用 `constraintSize({ maxHeight })` 限高。

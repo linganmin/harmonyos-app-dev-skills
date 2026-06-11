@@ -35,6 +35,13 @@ description: >-
 - ✅ 用**浏览器工具**(如 Playwright MCP:`browser_navigate` 打开页面 → `browser_snapshot` 取可访问性树 → `Read` 读取 snapshot 文件)才能拿到真实内容。
 - ✅ 找不到确切 URL 时,用 `WebSearch` 搜 "HarmonyOS <能力名> 官方文档",再用浏览器打开命中的 `developer.huawei.com` 链接。
 
+**捷径:直接 grep 本机 SDK 的类型声明**。查"某组件/枚举/接口到底有哪些字段、签名长什么样"时,最快且绝对与本机编译器一致的方式是 grep DevEco 自带 SDK 的 `.d.ts/.d.ets`:
+
+- 系统 API:`/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/ets/api/`
+- HMS / HDS(UIDesignKit 等):`/Applications/DevEco-Studio.app/Contents/sdk/default/hms/ets/api/`(如 `@hms.hds.hdsBaseComponent.d.ets` 含 HdsNavigation 全部选项)
+
+适合"API 存在性与准确签名"类问题(枚举值、options 接口字段、回调类型);**用法范式与最佳实践**仍以官方指南为准。
+
 把文档检索当成开发的第一步,不是最后的兜底。
 
 ## 技术栈心智模型
@@ -68,6 +75,7 @@ description: >-
 - **`references/aliyun-oss-upload.md`** — 实现文件直传到阿里云 OSS。基于官方 `@aliyun/oss` SDK + STS 临时授权的完整方案，包含封装工具类、后端接口规范、安全要求与最佳实践。
 - **`references/ui-theming-dark-mode.md`** — 实现深色模式适配时:语义色资源配置(base/dark 目录)、系统栏内容色切换、HDS 组件颜色适配、SVG 图标着色、代码改造策略与验收清单。
 - **`references/floating-tabs-minibar.md`** — 实现 HDS 浮动标签栏 + 迷你栏组合布局时(如音频/视频播放器):miniBar Builder 写法、barFloatingStyle 配置、渐变蒙版与材料效果、内容区域 padding 计算、响应式适配。
+- **`references/hds-navigation-blur.md`** — 实现 HDS 通用动态模糊导航(大标题滚动收起 / MINI 标题栏)时:HdsNavigation titleBar/scrollEffect/menu/backIcon 配置、FREE 与 MINI 双模式范式、嵌入 NavDestination、与 Refresh 下拉刷新组合、骨架屏占位组件范式。
 - **`references/common-kits.md`** — 需要网络、数据持久化(首选项/关系型/KV)、通知、账号登录、推送、定位、地图、支付等能力时——先来这里选对 Kit,再查官方文档。
 - **`references/official-docs-index.md`** — **每次要查具体 API 都先来这**:华为文档中心按"应用框架/系统/媒体/图形/应用服务/AI/工具/AGC"分类的 URL 索引。
 - **`references/quality-and-release.md`** — 权限模型、性能/功耗/稳定性体验、安全隐私合规、应用上架(AppGallery Connect)。
@@ -78,6 +86,10 @@ description: >-
 - **状态不刷新**:UI 不更新,几乎总是状态装饰器用错(改了普通成员变量、或改的是 `@State` 对象的深层属性而没用 `@Observed/@ObjectLink`)。见 `arkui-declarative.md`。
 - **ForEach 键值只用 id,编辑后列表行不刷新**:键值生成函数返回相同 key 时该项被视为"数据未变化"直接复用旧 UI。重新拉取数据后对象内容变了但 id 没变 → 该行停留旧内容。小列表直接 `(item) => JSON.stringify(item)`;长列表/高频局部更新用 `@Observed` class + `@ObjectLink` 子组件。
 - **同一节点链式绑定多个 `bindSheet` 会冲突**:点 B 入口弹出 A 的 sheet、两个 SheetPage 相互顶替,原弹窗再也弹不出。一个宿主组件最多绑一个 `bindSheet`,多弹窗用「单 bindSheet + `@State activeSheet` 切换 builder 内容」。另:`SheetSize.FIT_CONTENT` 自适应高度要求 builder 根节点高度**不能用百分比**。
+- **`Scroll` 内容不足一屏时默认垂直居中**:现象是"整页内容跑到屏幕中间",在内容多时完全正常、删减内容后突然出现,极易误判为布局错误。原因是 `Scroll` 的 `align` 默认 `Center`,内容高度小于视口时按对齐方式摆放。所有"从顶部开始渲染"的页面都要显式 `.align(Alignment.Top)`。
+- **`@State` 变量名撞上组件基类属性**:如 `@State direction` 直接编译失败(`Property 'direction' in type 'X' is not assignable to the same property in base type 'CustomComponent'`)。`direction`、`align`、`opacity`、`scale`、`visibility`、`enabled` 等通用属性方法名都不能做成员变量名,报错指向 base type 不易联想,换语义化名字(如 `guideDirection`)即可。
+- **`PersistentStorage.persistProp` 的调用时机**:必须在 UI 实例初始化完成后(`windowStage.loadContent` 的回调内)调用;在 `UIAbility.onCreate` 等过早时机调用会导致持久化静默失败、杀进程后数据丢失。
+- **`Refresh` 下拉刷新不会自动收起**:`Refresh({ refreshing: $$this.x })` 触发 `onRefreshing` 后,必须在请求完成时手动 `this.x = false`——**catch/未登录早退等所有分支都要置回**,漏一条分支刷新动画就永远转圈。
 - **私有读 OSS 桶上传后回显 403**:客户端直传成功后自行拼接的裸 URL 无读取权限,`Image` 加载 403 但画面停留旧图,上传 toast/状态全正常,肉眼极难定位(需抓 hilog 看 DownloadManager 403)。预览一律用本地沙箱文件(`file://` + 缓存路径),裸 URL/objectKey 只用于提交后端。见 `aliyun-oss-upload.md`。
 - **UI 加载位置**:在 `UIAbility.onCreate` 里加载页面是错的;页面要在 `onWindowStageCreate(windowStage)` 里通过 `windowStage.loadContent(...)` 加载。
 - **沉浸式只铺满、不避让**:调用 `setWindowLayoutFullScreen(true)` 后,必须同时读取 `getWindowAvoidArea(TYPE_SYSTEM/TYPE_NAVIGATION_INDICATOR)` 并监听 `on('avoidAreaChange')`,把顶部/底部避让高度写入状态,页面背景用 `expandSafeArea`,但实际内容、顶部栏、底部导航/按钮要用避让高度做 padding。详见 `references/immersive-system-bars.md`。
