@@ -61,6 +61,9 @@ struct Index {
 - 渲染控制:`if / else if / else`、`ForEach`(小数据集)、`LazyForEach`(大数据集)。
 - **ForEach 键值生成函数决定是否重渲染**:键值相同的项被视为"数据未变化",直接复用旧 UI——即使数据源换成了内容不同的新对象。因此键值只用 `id` 时,编辑/刷新后该行不会更新。小列表用 `(item) => JSON.stringify(item)`(内容变 → key 变 → 重建该行);长列表或高频局部更新用 `@Observed` class + `@ObjectLink` 子组件做属性级观察。
 
+- **`Slider` 进度联动用 `$$` 双向绑定**:`Slider({ value: this.x })` 单向绑定 + getter 计算值,状态高频变化(如播放进度)时滑块可能不刷新。标准范式:`@State sliderValue` + `Slider({ value: $$this.sliderValue })`,外部进度经 `@Watch` 写入 `sliderValue`(拖动期间 `seeking` 标志暂停回写)。另:Slider 创建/动画时会上报没有 Begin 起点的幻影 End 回调,seek 只认「Begin 之后的 End」或 `Click`。
+- **`promptAction.showToast` 与全局 `px2vp` 均已废弃**:新代码用 `this.getUIContext().getPromptAction().showToast(...)` 与 `this.getUIContext().px2vp(...)`。showToast 声明会抛异常,建议封装 `showToast(ui: UIContext, msg)` 工具统一 try/catch,组件内不再散落 `promptAction` 导入。
+
 ## 导航
 
 - **推荐 `Navigation`**:`NavPathStack` 管理路由栈,`NavDestination` 定义目标页,原生支持一次开发多端(自适应单/双栏)。
