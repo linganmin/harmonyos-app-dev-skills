@@ -63,6 +63,41 @@ description: >-
 4. **写代码**:UI/状态按 `references/arkui-declarative.md`;语言写法守 `references/arkts-language.md` 的约束;集成 Kit 按 `references/common-kits.md` 选型。
 5. **自检**:ArkTS 严格约束是否违反?状态是否真的会触发刷新?权限是否在 `module.json5` 声明且运行时申请?涉及发布看 `references/quality-and-release.md`。
 
+## 后端接口对接与枚举常量
+
+当任务涉及对接后端接口、改 `model/api/*.ets`、`service/*.ets`、页面表单提交参数、列表筛选、状态展示、类型分组、默认标记、收藏标记等 API 字段时，必须先读取当前接口文档；项目使用 Apifox 时，用 `apifox endpoint get`、`apifox schema get` 或导出 OpenAPI 核对最新字段名、必填项、请求/响应结构与注释。不要凭本地旧模型、历史需求文档或直觉改字段。
+
+接口字段和枚举值以接口文档注释为准，前端不自行改名、反转、兼容或重定义语义。例如文档写 `source_type: 1系统预设 2用户克隆`，前端模型、查询参数、页面分组都应使用 `source_type` 和 `1/2` 的语义；除非接口文档已经正式改成其他字段和值，否则不要引入 `voice_type=0/1` 之类的本地映射。
+
+所有来自接口文档的数值枚举都要在对应 `model/api/*.ets` 中定义语义化常量并导出，页面、服务、组件只能引用常量，不能散落魔法数字。覆盖范围包括但不限于 `status`、`type`、`gender`、`source_type`、`biz_type`、`is_default`、`is_favorite`、`reminder_enabled`、`audio_status`、故事风格/情绪/目标/场景分类等字段。
+
+推荐模式:
+
+```typescript
+// model/api/VoiceModels.ets
+export const VOICE_SOURCE_SYSTEM: number = 1;
+export const VOICE_SOURCE_USER_CLONE: number = 2;
+export const VOICE_STATUS_READY: number = 3;
+export const VOICE_DEFAULT_YES: number = 1;
+```
+
+```typescript
+// 页面/服务中
+if (voice.source_type === VOICE_SOURCE_SYSTEM) {
+  // 系统预设
+}
+```
+
+表单选项也要显式绑定接口枚举值，不要依赖数组下标推导，除非该映射表本身就是带 `label/value` 的常量并与 Apifox 注释一致。提交前检查请求体字段名是否和接口文档完全一致，例如 `sample_text`、`audio_file`、`source_type` 这类 snake_case 字段不要改成前端自造字段。
+
+完成接口对接后，至少做一次审计:
+
+```bash
+rg -n 'voice_type|source_type|status === [0-9]|type === [0-9]|is_default === [0-9]|is_favorite === [0-9]' products/default/src/main/ets
+```
+
+根据项目实际字段扩展搜索范围，确认剩余数字要么不是接口枚举，要么已经替换为导出的枚举常量。最后运行 hvigor 构建验证 ArkTS 类型与引用。
+
 ## references 路由
 
 按需读取,不要一次性全读进来:
