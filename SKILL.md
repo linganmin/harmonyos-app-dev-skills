@@ -98,6 +98,22 @@ rg -n 'voice_type|source_type|status === [0-9]|type === [0-9]|is_default === [0-
 
 根据项目实际字段扩展搜索范围，确认剩余数字要么不是接口枚举，要么已经替换为导出的枚举常量。最后运行 hvigor 构建验证 ArkTS 类型与引用。
 
+## 接口媒体资源缓存策略
+
+当接口响应中包含远程图片或音频 URL，例如 `avatar_url`、`cover`、`audio_url`、`image_url`，不要让页面或播放器在每次刷新数据时直接重新加载远程资源。先按资源类型设计缓存层，减少首屏等待、重复流量和服务端/OSS 压力。
+
+推荐落地方式:
+
+- 缓存目录放应用 `context.cacheDir` 下的独立子目录，例如 `media_cache/image`、`media_cache/audio`。这样不需要额外文件权限，也天然能和设置页的「缓存大小 / 清除缓存」对齐。
+- 设置页清理缓存时要递归删除 `cacheDir` 子目录；只用 `rmdirSync` 删除一级目录会在媒体缓存有子文件时失败。
+- 图片展示不要到处直接 `Image(remoteUrl)`。封装 `CachedImage` / `CachedAvatar` 组件：先查本地缓存命中，命中显示 `file://`；未命中先展示占位，再异步下载并切换到本地文件。对同一会话内重复图片，可配合 `UIContext.setImageCacheCount` 和 `setImageRawDataCacheSize` 提升解码/原始数据缓存命中。
+- 音频播放不要长期直接 `AVPlayer.url = remoteUrl`。优先用 `@kit.BasicServicesKit` 的 `request.downloadFile` 下载到 `cacheDir`，再用 `@kit.CoreFileKit` 打开文件并设置 `AVPlayer.fdSrc`。下载失败时可以回退远程 URL，保证播放可用性。
+- 缓存 key 要基于稳定资源身份。OSS/私有读签名 URL 常带 `x-oss-*`、`signature`、`expires`、`security-token` 等临时查询参数，计算 key 前应去掉这些签名参数，否则同一个对象每次签名刷新都会生成新缓存。
+- 设计 TTL 和容量上限，例如 7-14 天、几十到一百多 MB；缓存命中时更新 `mtime`，清理时按过期和最旧访问裁剪。HarmonyOS 文件系统默认不一定可靠更新 `atime`，不要把 LRU 依赖在 `atime` 上。
+- 上传后预览私有 OSS 图片时仍优先使用本地沙箱文件；后端返回的可读签名 URL 可以进入下载缓存，但裸 objectKey/裸 URL 不应直接给 `Image` 展示。
+
+完成媒体缓存后，至少验证三件事: `hvigorw assembleHap` 通过；刷新列表后页面使用本地 `file://` 或缓存文件播放；设置页「清除缓存」能清理媒体缓存目录且不报错。
+
 ## references 路由
 
 按需读取,不要一次性全读进来:
